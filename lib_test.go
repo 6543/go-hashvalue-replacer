@@ -64,12 +64,24 @@ func TestReader(t *testing.T) {
 			secrets: []string{"********"},
 			expect:  "already masked ********",
 		},
-		// {
-		//    name:    "log starts with zeros",
-		//    log:     "000000000\nword",
-		//    secrets: []string{"\nwo"},
-		//    expect:  "000000000********rd",
-		// },
+		{
+			name:    "edge case newline",
+			log:     "1000s\nwo",
+			secrets: []string{"\nwo"},
+			expect:  "1000s\n********",
+		},
+		//{
+		//	name:    "edge case newline + 0",
+		//	log:     "0pass\nw",
+		//	secrets: []string{"s\nw"},
+		//	expect:  "0pas********",
+		//},
+		{
+			name:    "edge case 0 + *",
+			log:     "0000*",
+			secrets: []string{"00*"},
+			expect:  "00********",
+		},
 	}
 
 	hashes := []struct {
@@ -256,12 +268,11 @@ func FuzzReader(f *testing.F) {
 			return
 		}
 
-		if secret == "*" {
-			// we expect an noop
+		if strings.Contains(secret, "\n") {
 			return
 		}
 
-		if strings.Contains(secret, "\n") {
+		if strings.Contains(secret, "*") {
 			return
 		}
 
@@ -269,7 +280,7 @@ func FuzzReader(f *testing.F) {
 		secrets := []string{secret}
 		opts := Options{
 			Hash: noHash,
-			Mask: "*",
+			Mask: "********",
 		}
 
 		hashes, lengths := ValuesToArgs(opts.Hash, nil, secrets)

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 )
 
 type HashAlgorithm func(salt []byte, data []byte) []byte
@@ -34,6 +35,7 @@ func ValuesToArgs(hashFn HashAlgorithm, salt []byte, values []string) (hashes []
 	lm := make(map[int]struct{}, len(values))
 
 	for _, value := range values {
+		value = strings.Trim(value, "\n")
 		hash := hashFn(salt, []byte(value))
 		hm[hex.EncodeToString(hash)] = hash
 		lm[len(value)] = struct{}{}
