@@ -18,7 +18,7 @@ func blake2bHash(salt []byte, data string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func TestSecretReplacer(t *testing.T) {
+func TestReader(t *testing.T) {
 	salt := []byte("test-salt")
 	opts := Options{
 		Hash: blake2bHash,
@@ -77,6 +77,64 @@ func TestSecretReplacer(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.EqualValues(t, c.expect, buf.String())
+		})
+	}
+}
+
+func BenchmarkReader(b *testing.B) {
+	salt := []byte("test-salt")
+	opts := Options{
+		Hash: func(salt []byte, data string) string {
+			h := sha256.New()
+			h.Write(salt)
+			h.Write([]byte(data))
+			return string(h.Sum(nil))
+		},
+		Mask: "********",
+	}
+
+	testCases := []struct {
+		name    string
+		log     string
+		secrets []string
+	}{
+		{
+			name:    "single_line",
+			log:     "this is a log with secret password and more text",
+			secrets: []string{"password"},
+		},
+		{
+			name:    "multi_line",
+			log:     "log start\nthis is a multi\nline secret\nlog end",
+			secrets: []string{"multi\nline secret"},
+		},
+		{
+			name:    "large_log",
+			log:     "start " + string(bytes.Repeat([]byte("test secret test "), 1000)) + " end",
+			secrets: []string{"secret"},
+		},
+		{
+			name:    "many_secrets",
+			log:     "log with many secrets: secret1 secret2 secret3 secret4 secret5",
+			secrets: []string{"secret1", "secret2", "secret3", "secret4", "secret5"},
+		},
+	}
+
+	for _, tc := range testCases {
+		b.Run(tc.name, func(b *testing.B) {
+			hashes, lengths := ValuesToArgs(opts.Hash, salt, tc.secrets)
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				reader, _ := NewReader(bytes.NewReader([]byte(tc.log)), salt, hashes, lengths, opts)
+				out := make([]byte, len(tc.log)*2)
+				for {
+					_, err := reader.Read(out)
+					if err != nil {
+						break
+					}
+				}
+			}
 		})
 	}
 }

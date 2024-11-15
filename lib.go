@@ -2,6 +2,7 @@ package hashvalue_replacer
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -18,12 +19,13 @@ type Options struct {
 var ErrorInvalidLengths = errors.New("invalid window lengths")
 
 type Reader struct {
-	reader  *bufio.Reader
-	salt    []byte
-	hashes  map[string]struct{}
-	lengths []int
-	options Options
-	buffer  []byte
+	reader    *bufio.Reader
+	salt      []byte
+	hashes    map[string]struct{}
+	lengths   []int
+	options   Options
+	buffer    *bytes.Buffer
+	maxLength int
 }
 
 func ValuesToArgs(hashFn HashAlgorithm, salt []byte, values []string) (hashes []string, lengths []int) {
@@ -47,20 +49,19 @@ func NewReader(rd io.Reader, salt []byte, hashes []string, lengths []int, opts O
 		return rd, nil
 	}
 
-	// Sort lengths in descending order
 	sort.Sort(sort.Reverse(sort.IntSlice(lengths)))
-
 	if len(lengths) == 0 || lengths[0] == 0 {
 		return nil, fmt.Errorf("%w: the reader needs at least one window size bigger than zero", ErrorInvalidLengths)
 	}
 
 	r := &Reader{
-		reader:  bufio.NewReader(rd),
-		salt:    salt,
-		lengths: lengths,
-		options: opts,
-		hashes:  make(map[string]struct{}, len(hashes)),
-		buffer:  make([]byte, lengths[0]),
+		reader:    bufio.NewReader(rd),
+		salt:      salt,
+		lengths:   lengths,
+		options:   opts,
+		hashes:    make(map[string]struct{}, len(hashes)),
+		buffer:    &bytes.Buffer{},
+		maxLength: lengths[0],
 	}
 
 	for _, hash := range hashes {
@@ -71,52 +72,72 @@ func NewReader(rd io.Reader, salt []byte, hashes []string, lengths []int, opts O
 }
 
 func (r *Reader) Read(p []byte) (n int, err error) {
-	line, err := r.reader.ReadBytes('\n')
-	if err != nil && err != io.EOF {
-		return 0, err
-	}
-	if len(line) == 0 {
-		return 0, err
-	}
-
-	var written int
-	lastPos := 0
-	lineLen := len(line)
-
-outer:
-	for i := 0; i <= lineLen-r.lengths[0]; i++ {
-		// Check each length starting with largest
-		for _, length := range r.lengths {
-			if i+length > lineLen {
-				continue
+	// If buffer is empty, read at least maxLength*2 bytes to ensure we can match patterns
+	if r.buffer.Len() < r.maxLength*2 {
+		for r.buffer.Len() < r.maxLength*2 {
+			line, err := r.reader.ReadBytes('\n')
+			if err != nil && err != io.EOF {
+				return 0, err
 			}
-
-			windowHash := r.options.Hash(r.salt, string(line[i:i+length]))
-			if _, exists := r.hashes[windowHash]; exists {
-				if i-lastPos > 0 {
-					copied := copy(p[written:], line[lastPos:i])
-					written += copied
-				}
-				copied := copy(p[written:], []byte(r.options.Mask))
-				written += copied
-
-				lastPos = i + length
-				i += length - 1
-
-				if written >= len(p) {
-					return written, io.ErrShortBuffer
-				}
-
-				// we do not have to search for smaller windows to match
-				continue outer
+			if len(line) > 0 {
+				r.buffer.Write(line)
+			}
+			if err == io.EOF {
+				break
 			}
 		}
 	}
 
-	if lastPos < len(line) {
-		copied := copy(p[written:], line[lastPos:])
-		written += copied
+	if r.buffer.Len() == 0 {
+		return 0, io.EOF
 	}
 
-	return written, err
+	data := r.buffer.Bytes()
+	result := r.processData(data)
+
+	n = copy(p, result)
+	r.buffer.Reset()
+
+	if n < len(result) {
+		r.buffer.Write(result[n:])
+	}
+
+	return n, nil
+}
+
+func (r *Reader) processData(data []byte) []byte {
+	result := make([]byte, 0, len(data))
+	lastPos := 0
+	dataLen := len(data)
+
+	for i := 0; i < dataLen; {
+		found := false
+		// Try matching each length starting with longest
+		for _, length := range r.lengths {
+			if i+length > dataLen {
+				continue
+			}
+
+			hash := r.options.Hash(r.salt, string(data[i:i+length]))
+			if _, exists := r.hashes[hash]; exists {
+				if i > lastPos {
+					result = append(result, data[lastPos:i]...)
+				}
+				result = append(result, []byte(r.options.Mask)...)
+				i += length
+				lastPos = i
+				found = true
+				break
+			}
+		}
+		if !found {
+			i++
+		}
+	}
+
+	if lastPos < dataLen {
+		result = append(result, data[lastPos:]...)
+	}
+
+	return result
 }
