@@ -3,7 +3,6 @@ package hashvalue_replacer
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
 	"io"
 	"strings"
 	"testing"
@@ -11,14 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func blake2bHash(salt []byte, data string) string {
+func blake2bHash(salt []byte, data []byte) []byte {
 	h := sha256.New()
 	h.Write(salt)
 	h.Write([]byte(data))
-	return hex.EncodeToString(h.Sum(nil))
+	return h.Sum(nil)
 }
 
-func noHash(_ []byte, data string) string {
+func noHash(_ []byte, data []byte) []byte {
 	return data
 }
 
@@ -105,12 +104,7 @@ func TestReader(t *testing.T) {
 func BenchmarkReader(b *testing.B) {
 	salt := []byte("test-salt")
 	opts := Options{
-		Hash: func(salt []byte, data string) string {
-			h := sha256.New()
-			h.Write(salt)
-			h.Write([]byte(data))
-			return string(h.Sum(nil))
-		},
+		Hash: blake2bHash,
 		Mask: "********",
 	}
 
@@ -169,9 +163,7 @@ func BenchmarkReader(b *testing.B) {
 func BenchmarkReaderNoHash(b *testing.B) {
 	salt := []byte{}
 	opts := Options{
-		Hash: func(_ []byte, data string) string {
-			return data
-		},
+		Hash: noHash,
 		Mask: "********",
 	}
 
@@ -228,11 +220,11 @@ func BenchmarkReaderNoHash(b *testing.B) {
 }
 
 // cpu: AMD Ryzen 9 7940HS
-// BenchmarkReaderNoHash/single_line-16         	 1000000	      1041 ns/op	  46.10 MB/s	     368 B/op	      36 allocs/op
-// BenchmarkReaderNoHash/multi_line-16          	 1083728	      1001 ns/op	  44.97 MB/s	     617 B/op	      27 allocs/op
-// BenchmarkReaderNoHash/many_secrets-16        	  795691	      1351 ns/op	  45.88 MB/s	     513 B/op	      35 allocs/op
-// BenchmarkReaderNoHash/large_log-16           	    2574	    460755 ns/op	  36.92 MB/s	  292468 B/op	   25451 allocs/op
-// BenchmarkReaderNoHash/large_log_no_match-16  	    2552	    467957 ns/op	  36.35 MB/s	  275242 B/op	   26447 allocs/op
+// BenchmarkReaderNoHash/single_line-16         	 1902592	       568.7 ns/op	  84.40 MB/s	      96 B/op	       2 allocs/op
+// BenchmarkReaderNoHash/multi_line-16          	 1794609	       667.2 ns/op	  67.45 MB/s	     112 B/op	       6 allocs/op
+// BenchmarkReaderNoHash/many_secrets-16        	 1000000	      1020 ns/op	  60.75 MB/s	     256 B/op	       3 allocs/op
+// BenchmarkReaderNoHash/large_log-16           	    7964	    155211 ns/op	 109.59 MB/s	   88884 B/op	      12 allocs/op
+// BenchmarkReaderNoHash/large_log_no_match-16  	    7628	    149414 ns/op	 113.85 MB/s	   63616 B/op	      11 allocs/op
 
 func FuzzReader(f *testing.F) {
 	// Add initial corpus

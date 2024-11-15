@@ -3,13 +3,14 @@ package hashvalue_replacer
 import (
 	"bufio"
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"sort"
 )
 
-type HashAlgorithm func(salt []byte, data string) string
+type HashAlgorithm func(salt []byte, data []byte) []byte
 
 type Options struct {
 	Hash HashAlgorithm
@@ -21,25 +22,26 @@ var ErrorInvalidLengths = errors.New("invalid window lengths")
 type Reader struct {
 	reader    *bufio.Reader
 	salt      []byte
-	hashes    map[string]struct{}
+	hashes    [][]byte
 	lengths   []int
 	options   Options
 	buffer    *bytes.Buffer
 	maxLength int
 }
 
-func ValuesToArgs(hashFn HashAlgorithm, salt []byte, values []string) (hashes []string, lengths []int) {
-	hm := make(map[string]struct{}, len(values))
+func ValuesToArgs(hashFn HashAlgorithm, salt []byte, values []string) (hashes [][]byte, lengths []int) {
+	hm := make(map[string][]byte, len(values))
 	lm := make(map[int]struct{}, len(values))
 
 	for _, value := range values {
-		hm[hashFn(salt, value)] = struct{}{}
+		hash := hashFn(salt, []byte(value))
+		hm[hex.EncodeToString(hash)] = hash
 		lm[len(value)] = struct{}{}
 	}
 
-	hashes = make([]string, 0, len(hm))
-	for k := range hm {
-		hashes = append(hashes, k)
+	hashes = make([][]byte, 0, len(hm))
+	for _, v := range hm {
+		hashes = append(hashes, v)
 	}
 	lengths = make([]int, 0, len(lm))
 	for k := range lm {
@@ -50,7 +52,7 @@ func ValuesToArgs(hashFn HashAlgorithm, salt []byte, values []string) (hashes []
 	return hashes, lengths
 }
 
-func NewReader(rd io.Reader, salt []byte, hashes []string, lengths []int, opts Options) (io.Reader, error) {
+func NewReader(rd io.Reader, salt []byte, hashes [][]byte, lengths []int, opts Options) (io.Reader, error) {
 	if len(hashes) == 0 {
 		return rd, nil
 	}
@@ -65,13 +67,9 @@ func NewReader(rd io.Reader, salt []byte, hashes []string, lengths []int, opts O
 		salt:      salt,
 		lengths:   lengths,
 		options:   opts,
-		hashes:    make(map[string]struct{}, len(hashes)),
+		hashes:    hashes,
 		buffer:    &bytes.Buffer{},
 		maxLength: lengths[0],
-	}
-
-	for _, hash := range hashes {
-		r.hashes[hash] = struct{}{}
 	}
 
 	return r, nil
@@ -124,8 +122,8 @@ func (r *Reader) processData(data []byte) []byte {
 				continue
 			}
 
-			hash := r.options.Hash(r.salt, string(data[i:i+length]))
-			if _, exists := r.hashes[hash]; exists {
+			hash := r.options.Hash(r.salt, data[i:i+length])
+			if r.hashMatch(hash) {
 				if i > lastPos {
 					result = append(result, data[lastPos:i]...)
 				}
@@ -146,4 +144,13 @@ func (r *Reader) processData(data []byte) []byte {
 	}
 
 	return result
+}
+
+func (r *Reader) hashMatch(test []byte) bool {
+	for i := range r.hashes {
+		if bytes.Equal(test, r.hashes[i]) {
+			return true
+		}
+	}
+	return false
 }
