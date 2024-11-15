@@ -29,18 +29,24 @@ type Reader struct {
 }
 
 func ValuesToArgs(hashFn HashAlgorithm, salt []byte, values []string) (hashes []string, lengths []int) {
-	hm := make(map[string]struct{})
-	lm := make(map[int]struct{})
+	hm := make(map[string]struct{}, len(values))
+	lm := make(map[int]struct{}, len(values))
+
 	for _, value := range values {
 		hm[hashFn(salt, value)] = struct{}{}
 		lm[len(value)] = struct{}{}
 	}
+
+	hashes = make([]string, 0, len(hm))
 	for k := range hm {
 		hashes = append(hashes, k)
 	}
+	lengths = make([]int, 0, len(lm))
 	for k := range lm {
 		lengths = append(lengths, k)
 	}
+
+	sort.Sort(sort.Reverse(sort.IntSlice(lengths)))
 	return hashes, lengths
 }
 
