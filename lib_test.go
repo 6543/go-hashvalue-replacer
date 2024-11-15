@@ -212,6 +212,11 @@ func BenchmarkReaderNoHash(b *testing.B) {
 			log:     "start " + string(bytes.Repeat([]byte("test secret test "), 1000)) + " end",
 			secrets: []string{"XXXXXXX"},
 		},
+		{
+			name:    "large log",
+			log:     "start " + string(bytes.Repeat([]byte("test secret test "), 1000)) + " end",
+			secrets: []string{"secret", "1e5195580a1c01618b76e225b56fb105b2d25cd8", "3991a1e99e1c28c9ffe782fe03c3b2db4b64bf11", "3991a1e99e1c28c9ffe782fe03c3b2db4b64bf11", "3991a1e99e1c28c9ffe782fe03c3b2db4b64bf11", "3991a1", "e99e1c", "28c9ff", "e782fe0", "3c3b2", "db4b64bf11"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -240,6 +245,7 @@ func BenchmarkReaderNoHash(b *testing.B) {
 // BenchmarkReaderNoHash/many_secrets-16        	 1000000	      1020 ns/op	  60.75 MB/s	     256 B/op	       3 allocs/op
 // BenchmarkReaderNoHash/large_log-16           	    7964	    155211 ns/op	 109.59 MB/s	   88884 B/op	      12 allocs/op
 // BenchmarkReaderNoHash/large_log_no_match-16  	    7628	    149414 ns/op	 113.85 MB/s	   63616 B/op	      11 allocs/op
+// BenchmarkReaderNoHash/large_log#01-16        	     848	   1396247 ns/op	  12.18 MB/s	   88835 B/op	      12 allocs/op
 
 func FuzzReader(f *testing.F) {
 	// Add initial corpus
