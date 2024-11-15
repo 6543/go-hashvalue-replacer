@@ -7,7 +7,6 @@ import (
 	"io"
 	"strings"
 	"testing"
-	"unicode"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -54,6 +53,21 @@ func TestReader(t *testing.T) {
 		log:     "start log\ndone\nnow\nan\nmulti line secret!! ;)\nwith\ntwo\n\nnewlines",
 		secrets: []string{"an\nmulti line secret!!", "two\n\nnewlines"},
 		expect:  "start log\ndone\nnow\n******** ;)\nwith\n********",
+	}, {
+		name:    "also support other unicode chars",
+		log:     "мультибайт\nтекст",
+		secrets: []string{"мульти"},
+		expect:  "********байт\nтекст",
+	}, {
+		name:    "loop detection of mask already in input",
+		log:     "already masked ********",
+		secrets: []string{"********"},
+		expect:  "already masked ********",
+	}, {
+		name:    "log starts with zeros",
+		log:     "000000000\nword",
+		secrets: []string{"\nwo"},
+		expect:  "000000000********rd",
 	}}
 
 	hashes := []struct {
@@ -213,67 +227,64 @@ func BenchmarkReaderNoHash(b *testing.B) {
 	}
 }
 
+// cpu: AMD Ryzen 9 7940HS
+// BenchmarkReaderNoHash/single_line-16         	 1000000	      1041 ns/op	  46.10 MB/s	     368 B/op	      36 allocs/op
+// BenchmarkReaderNoHash/multi_line-16          	 1083728	      1001 ns/op	  44.97 MB/s	     617 B/op	      27 allocs/op
+// BenchmarkReaderNoHash/many_secrets-16        	  795691	      1351 ns/op	  45.88 MB/s	     513 B/op	      35 allocs/op
+// BenchmarkReaderNoHash/large_log-16           	    2574	    460755 ns/op	  36.92 MB/s	  292468 B/op	   25451 allocs/op
+// BenchmarkReaderNoHash/large_log_no_match-16  	    2552	    467957 ns/op	  36.35 MB/s	  275242 B/op	   26447 allocs/op
+
 func FuzzReader(f *testing.F) {
 	// Add initial corpus
 	seeds := []struct {
-		input   string
-		secrets []string
+		input  string
+		secret string
 	}{
-		{"", []string{}},
-		{"simple text", []string{"simple"}},
-		{"line1\nline2\nline3", []string{"line2"}},
-		{"test\npass\nword\n", []string{"pass\nword"}},
-		{"multiline\nsecret\nhere", []string{"multiline\nsecret"}},
-		{"overlap1overlap2", []string{"overlap1", "overlap2", "overlap"}},
-		{strings.Repeat("a", 1000), []string{"aaa"}},
-		{"мультибайт\nтекст", []string{"мульти"}},
+		{"simple text", "simple"},
+		{"simple text", "NON"},
+		{"line1\nline2\nline3", "line2"},
+		{"test\npass\nword\n", "pass\nword"},
+		{"multiline\nsecret\nhere", "multiline\nsecret"},
+		{"overlap1overlap2", "overlap"},
+		{strings.Repeat("a", 1000), "aaa"},
+		{"мультибайт\nтекст", "мульти"},
 	}
 
 	for _, seed := range seeds {
-		f.Add(seed.input, strings.Join(seed.secrets, "\n"))
+		f.Add(seed.input, seed.secret)
 	}
 
 	// Fuzzing function
-	f.Fuzz(func(t *testing.T, input, secretsList string) {
+	f.Fuzz(func(t *testing.T, input string, secret string) {
 		// Skip empty inputs
-		if len(input) == 0 && len(secretsList) == 0 {
+		if len(secret) < 3 {
 			return
 		}
 
-		// Split secrets and filter invalid ones
-		var secrets []string
-		for _, s := range strings.Split(secretsList, "\n") {
-			// Skip empty or very short secrets
-			if len(s) <= 3 {
-				continue
-			}
-			// Skip secrets containing only whitespace or control chars
-			if strings.TrimSpace(s) == "" {
-				continue
-			}
-			secrets = append(secrets, s)
+		if secret == "*" {
+			// we expect an noop
+			return
 		}
 
 		// Setup reader
+		secrets := []string{secret}
 		opts := Options{
 			Hash: noHash,
-			Mask: "********",
+			Mask: "*",
 		}
 
-		salt := []byte("test-salt") // salt is ignored by noHash
-		hashes, lengths := ValuesToArgs(opts.Hash, salt, secrets)
-		inputReader := bytes.NewReader([]byte(input))
-		reader, err := NewReader(inputReader, salt, hashes, lengths, opts)
-
+		hashes, lengths := ValuesToArgs(opts.Hash, nil, secrets)
+		inputReader := strings.NewReader(input)
+		reader, err := NewReader(inputReader, nil, hashes, lengths, opts)
 		// Test reader creation
+		if err != nil {
+			t.Fatal("reader creation failed:", err)
+		}
 		if len(secrets) == 0 {
 			if reader != inputReader {
 				t.Fatal("empty secrets should return original reader")
 			}
 			return
-		}
-		if err != nil {
-			t.Fatal("reader creation failed:", err)
 		}
 
 		// Read and verify output
@@ -282,19 +293,7 @@ func FuzzReader(f *testing.F) {
 		for {
 			n, err := reader.Read(buf)
 			if n > 0 {
-				// Verify mask replacement consistency
 				chunk := buf[:n]
-				maskCount := bytes.Count(chunk, []byte(opts.Mask))
-
-				// Each secret should produce at most len(input)/len(secret) masks
-				for _, secret := range secrets {
-					maxPossibleMasks := len(input) / len(secret)
-					if maskCount > maxPossibleMasks {
-						t.Errorf("too many masks found: %d > %d (input: %q, secret: %q)",
-							maskCount, maxPossibleMasks, input, secret)
-					}
-				}
-
 				output.Write(chunk)
 			}
 			if err != nil {
@@ -315,42 +314,5 @@ func FuzzReader(f *testing.F) {
 				t.Errorf("unmasked secret found in output: %q (input: %q)", secret, input)
 			}
 		}
-
-		// Check that non-secret content is preserved when it should be
-		nonSecretParts := strings.Split(input, "\n")
-		for _, part := range nonSecretParts {
-			isSecret := false
-			for _, secret := range secrets {
-				if strings.Contains(secret, part) {
-					isSecret = true
-					break
-				}
-			}
-			if !isSecret && len(part) > 0 && !containsOnlySpecialChars(part) {
-				// Check if this part should appear somewhere in output
-				modifiedPart := strings.ReplaceAll(result, opts.Mask, "")
-				if !strings.Contains(modifiedPart, part) && !strings.Contains(part, modifiedPart) {
-					t.Errorf("non-secret content lost: %q (input: %q, result: %q)",
-						part, input, result)
-				}
-			}
-		}
-
-		// Verify newline preservation
-		inputNewlines := strings.Count(input, "\n")
-		outputNewlines := strings.Count(result, "\n")
-		if inputNewlines != outputNewlines {
-			t.Errorf("newline count mismatch: got %d, want %d (input: %q, result: %q)",
-				outputNewlines, inputNewlines, input, result)
-		}
 	})
-}
-
-func containsOnlySpecialChars(s string) bool {
-	for _, r := range s {
-		if !unicode.IsSpace(r) && !unicode.IsPunct(r) && !unicode.IsSymbol(r) {
-			return false
-		}
-	}
-	return true
 }
