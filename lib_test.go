@@ -187,6 +187,13 @@ func BenchmarkReader(b *testing.B) {
 // BenchmarkReader/many_secrets-16           100000                74.10 ns/op      836.70 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/large_log-16              100000                73.12 ns/op     232642.04 MB/s         4 B/op          0 allocs/op
 // BenchmarkReader/large_log_no_match-16     100000                82.83 ns/op     205358.22 MB/s         6 B/op          0 allocs/op
+//
+// cpu: AMD Ryzen 9 3900XT 12-Core Processor
+// BenchmarkReader/single_line-24            100000                99.57 ns/op      482.06 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/multi_line-24             100000               102.8 ns/op       437.60 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/many_secrets-24           100000               103.4 ns/op       599.34 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/large_log-24              100000               123.0 ns/op      138241.39 MB/s         5 B/op          0 allocs/op
+// BenchmarkReader/large_log_no_match-24     100000               127.8 ns/op      133090.80 MB/s         6 B/op          0 allocs/op
 
 func BenchmarkReaderNoHash(b *testing.B) {
 	salt := []byte{}
@@ -263,6 +270,16 @@ func BenchmarkReaderNoHash(b *testing.B) {
 // BenchmarkReaderNoHash/large_log-16                100000                65.28 ns/op     260571.61 MB/s         1 B/op          0 allocs/op
 // BenchmarkReaderNoHash/large_log_no_match-16       100000                66.41 ns/op     256155.37 MB/s         0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/large_log#01-16             100000                67.84 ns/op     250737.51 MB/s         0 B/op          0 allocs/op
+//
+// cpu: AMD Ryzen 9 3900XT 12-Core Processor
+// BenchmarkReaderNoHash/single_line-24              100000               101.9 ns/op       471.03 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/multi_line-24               100000               103.9 ns/op       433.08 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/many_secrets-24             100000               102.6 ns/op       604.37 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log-24                100000               105.1 ns/op      161883.91 MB/s         1 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log_no_match-24       100000               100.8 ns/op      168692.68 MB/s         0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log#01-24             100000               117.5 ns/op      144731.78 MB/s         1 B/op          0 allocs/op
+
+// TODO: benchmark arm & intel
 
 func FuzzReader(f *testing.F) {
 	// Add initial corpus
