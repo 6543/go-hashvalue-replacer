@@ -70,12 +70,12 @@ func TestReader(t *testing.T) {
 			secrets: []string{"\nwo"},
 			expect:  "1000s\n********",
 		},
-		//{
-		//	name:    "edge case newline + 0",
-		//	log:     "0pass\nw",
-		//	secrets: []string{"s\nw"},
-		//	expect:  "0pas********",
-		//},
+		{
+			name:    "edge case newline + 0",
+			log:     "0pass\nw",
+			secrets: []string{"s\nw"},
+			expect:  "0pas********",
+		},
 		{
 			name:    "edge case 0 + *",
 			log:     "0000*",
@@ -276,10 +276,6 @@ func FuzzReader(f *testing.F) {
 	f.Fuzz(func(t *testing.T, input string, secret string) {
 		// Skip empty inputs
 		if len(secret) < 3 {
-			return
-		}
-
-		if strings.Contains(secret, "\n") {
 			return
 		}
 
