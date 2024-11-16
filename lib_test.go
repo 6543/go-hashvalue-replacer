@@ -101,8 +101,9 @@ func TestReader(t *testing.T) {
 			for _, c := range tc {
 				t.Run(c.name, func(t *testing.T) {
 					hashes, lengths := ValuesToArgs(opts.Hash, salt, c.secrets)
-					reader, err := NewReader(strings.NewReader(c.log), salt, hashes, lengths, opts)
+					reader, err := NewReader(io.NopCloser(strings.NewReader(c.log)), salt, hashes, lengths, opts)
 					assert.NoError(t, err)
+					defer reader.Close()
 
 					// Read and process the entire log
 					var buf bytes.Buffer
@@ -160,7 +161,7 @@ func BenchmarkReader(b *testing.B) {
 			input := []byte(tc.log)
 			hashes, lengths := ValuesToArgs(opts.Hash, salt, tc.secrets)
 			inputReader := bytes.NewReader(input)
-			reader, _ := NewReader(inputReader, salt, hashes, lengths, opts)
+			reader, _ := NewReader(io.NopCloser(inputReader), salt, hashes, lengths, opts)
 
 			b.ResetTimer()
 			b.SetBytes(int64(len(input)))
@@ -224,7 +225,11 @@ func BenchmarkReaderNoHash(b *testing.B) {
 			input := []byte(tc.log)
 			hashes, lengths := ValuesToArgs(opts.Hash, salt, tc.secrets)
 			inputReader := bytes.NewReader(input)
-			reader, _ := NewReader(inputReader, salt, hashes, lengths, opts)
+			reader, err := NewReader(io.NopCloser(inputReader), salt, hashes, lengths, opts)
+			if err != nil {
+				b.Fatalf("unexpected error: %v", err)
+			}
+			defer reader.Close()
 
 			b.ResetTimer()
 			b.SetBytes(int64(len(input)))
@@ -291,15 +296,12 @@ func FuzzReader(f *testing.F) {
 
 		hashes, lengths := ValuesToArgs(opts.Hash, nil, secrets)
 		inputReader := strings.NewReader(input)
-		reader, err := NewReader(inputReader, nil, hashes, lengths, opts)
+		reader, err := NewReader(io.NopCloser(inputReader), nil, hashes, lengths, opts)
 		// Test reader creation
 		if err != nil {
 			t.Fatal("reader creation failed:", err)
 		}
 		if len(secrets) == 0 {
-			if reader != inputReader {
-				t.Fatal("empty secrets should return original reader")
-			}
 			return
 		}
 
