@@ -183,26 +183,33 @@ func BenchmarkReader(b *testing.B) {
 
 // go test -benchmem -run='^$' -bench '^BenchmarkReader$' -benchtime=1000000x github.com/6543/go-hashvalue-replacer
 //
-// cpu: AMD Ryzen 9 7940HS
+// cpu: AMD Ryzen 9 7940HS (16-Core)
 // BenchmarkReader/single_line-16            100000                63.52 ns/op      755.64 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/multi_line-16             100000                64.85 ns/op      693.91 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/many_secrets-16           100000                74.10 ns/op      836.70 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/large_log-16              100000                73.12 ns/op     232642.04 MB/s         4 B/op          0 allocs/op
 // BenchmarkReader/large_log_no_match-16     100000                82.83 ns/op     205358.22 MB/s         6 B/op          0 allocs/op
 //
-// cpu: AMD Ryzen 9 3900XT 12-Core Processor
+// cpu: AMD Ryzen 9 3900XT (12-Core)
 // BenchmarkReader/single_line-24            100000                99.57 ns/op      482.06 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/multi_line-24             100000               102.8 ns/op       437.60 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/many_secrets-24           100000               103.4 ns/op       599.34 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/large_log-24              100000               123.0 ns/op      138241.39 MB/s         5 B/op          0 allocs/op
 // BenchmarkReader/large_log_no_match-24     100000               127.8 ns/op      133090.80 MB/s         6 B/op          0 allocs/op
 //
-// cpu: Ampere Altra 2 vCPUs
+// cpu: Ampere Altra (2 vCPUs)
 // BenchmarkReader/single_line-2             100000               215.6 ns/op       222.61 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/multi_line-2              100000               219.2 ns/op       205.31 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/many_secrets-2            100000               213.7 ns/op       290.15 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/large_log-2               100000               233.3 ns/op      72915.67 MB/s          4 B/op          0 allocs/op
 // BenchmarkReader/large_log_no_match-2      100000               233.0 ns/op      73009.93 MB/s          6 B/op          0 allocs/op
+//
+// cpu: Intel Xeon Processor (Skylake, IBRS, no TSX) (2 vCPUs)
+// BenchmarkReader/single_line-2             100000               348.4 ns/op       137.78 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/multi_line-2              100000               361.4 ns/op       124.53 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/many_secrets-2            100000               356.8 ns/op       173.78 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/large_log-2               100000               448.7 ns/op      37906.51 MB/s          4 B/op          0 allocs/op
+// BenchmarkReader/large_log_no_match-2      100000               468.8 ns/op      36283.66 MB/s          6 B/op          0 allocs/op
 
 func BenchmarkReaderNoHash(b *testing.B) {
 	salt := []byte{}
@@ -274,7 +281,7 @@ func BenchmarkReaderNoHash(b *testing.B) {
 
 // go test -benchmem -run='^$' -bench '^BenchmarkReaderNoHash$' -benchtime=1000000x github.com/6543/go-hashvalue-replacer
 //
-// cpu: AMD Ryzen 9 7940HS
+// cpu: AMD Ryzen 9 7940HS (16-Core)
 // BenchmarkReaderNoHash/single_line-16              100000                62.21 ns/op      771.62 MB/s           0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/multi_line-16               100000                61.72 ns/op      729.08 MB/s           0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/many_secrets-16             100000                64.66 ns/op      958.85 MB/s           0 B/op          0 allocs/op
@@ -282,7 +289,7 @@ func BenchmarkReaderNoHash(b *testing.B) {
 // BenchmarkReaderNoHash/large_log_no_match-16       100000                66.41 ns/op     256155.37 MB/s         0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/large_log#01-16             100000                67.84 ns/op     250737.51 MB/s         0 B/op          0 allocs/op
 //
-// cpu: AMD Ryzen 9 3900XT 12-Core Processor
+// cpu: AMD Ryzen 9 3900XT (12-Core)
 // BenchmarkReaderNoHash/single_line-24              100000               101.9 ns/op       471.03 MB/s           0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/multi_line-24               100000               103.9 ns/op       433.08 MB/s           0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/many_secrets-24             100000               102.6 ns/op       604.37 MB/s           0 B/op          0 allocs/op
@@ -290,15 +297,21 @@ func BenchmarkReaderNoHash(b *testing.B) {
 // BenchmarkReaderNoHash/large_log_no_match-24       100000               100.8 ns/op      168692.68 MB/s         0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/large_log#01-24             100000               117.5 ns/op      144731.78 MB/s         1 B/op          0 allocs/op
 //
-// cpu: Ampere Altra 2 vCPUs
+// cpu: Ampere Altra (2 vCPUs)
 // BenchmarkReaderNoHash/single_line-2               100000               212.8 ns/op       225.52 MB/s           0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/multi_line-2                100000               214.9 ns/op       209.38 MB/s           0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/many_secrets-2              100000               219.3 ns/op       282.77 MB/s           0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/large_log-2                 100000               218.7 ns/op      77771.93 MB/s          0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/large_log_no_match-2        100000               222.3 ns/op      76525.01 MB/s          0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/large_log#01-2              100000               268.6 ns/op      63321.08 MB/s          1 B/op          0 allocs/op
-
-// TODO: benchmark arm & intel
+//
+// cpu: Intel Xeon Processor (Skylake, IBRS, no TSX) (2 vCPUs)
+// BenchmarkReaderNoHash/single_line-2               100000               344.4 ns/op       139.35 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/multi_line-2                100000               339.9 ns/op       132.40 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/many_secrets-2              100000               339.5 ns/op       182.62 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log-2                 100000               329.3 ns/op      51653.91 MB/s          1 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log_no_match-2        100000               340.7 ns/op      49928.86 MB/s          0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log#01-2              100000               335.8 ns/op      50652.16 MB/s          1 B/op          0 allocs/op
 
 func FuzzReader(f *testing.F) {
 	// Add initial corpus
