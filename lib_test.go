@@ -245,12 +245,12 @@ func BenchmarkReaderNoHash(b *testing.B) {
 }
 
 // cpu: AMD Ryzen 9 7940HS
-// BenchmarkReaderNoHash/single_line-16         	 1902592	       568.7 ns/op	  84.40 MB/s	      96 B/op	       2 allocs/op
-// BenchmarkReaderNoHash/multi_line-16          	 1794609	       667.2 ns/op	  67.45 MB/s	     112 B/op	       6 allocs/op
-// BenchmarkReaderNoHash/many_secrets-16        	 1000000	      1020 ns/op	  60.75 MB/s	     256 B/op	       3 allocs/op
-// BenchmarkReaderNoHash/large_log-16           	    7964	    155211 ns/op	 109.59 MB/s	   88884 B/op	      12 allocs/op
-// BenchmarkReaderNoHash/large_log_no_match-16  	    7628	    149414 ns/op	 113.85 MB/s	   63616 B/op	      11 allocs/op
-// BenchmarkReaderNoHash/large_log#01-16        	     848	   1396247 ns/op	  12.18 MB/s	   88835 B/op	      12 allocs/op
+// BenchmarkReaderNoHash/single_line-16              100000                62.21 ns/op      771.62 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/multi_line-16               100000                61.72 ns/op      729.08 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/many_secrets-16             100000                64.66 ns/op      958.85 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log-16                100000                65.28 ns/op     260571.61 MB/s         1 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log_no_match-16       100000                66.41 ns/op     256155.37 MB/s         0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log#01-16             100000                67.84 ns/op     250737.51 MB/s         0 B/op          0 allocs/op
 
 func FuzzReader(f *testing.F) {
 	// Add initial corpus
