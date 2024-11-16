@@ -196,6 +196,13 @@ func BenchmarkReader(b *testing.B) {
 // BenchmarkReader/many_secrets-24           100000               103.4 ns/op       599.34 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/large_log-24              100000               123.0 ns/op      138241.39 MB/s         5 B/op          0 allocs/op
 // BenchmarkReader/large_log_no_match-24     100000               127.8 ns/op      133090.80 MB/s         6 B/op          0 allocs/op
+//
+// cpu: Ampere Altra 2 vCPUs
+// BenchmarkReader/single_line-2             100000               215.6 ns/op       222.61 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/multi_line-2              100000               219.2 ns/op       205.31 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/many_secrets-2            100000               213.7 ns/op       290.15 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/large_log-2               100000               233.3 ns/op      72915.67 MB/s          4 B/op          0 allocs/op
+// BenchmarkReader/large_log_no_match-2      100000               233.0 ns/op      73009.93 MB/s          6 B/op          0 allocs/op
 
 func BenchmarkReaderNoHash(b *testing.B) {
 	salt := []byte{}
@@ -282,6 +289,14 @@ func BenchmarkReaderNoHash(b *testing.B) {
 // BenchmarkReaderNoHash/large_log-24                100000               105.1 ns/op      161883.91 MB/s         1 B/op          0 allocs/op
 // BenchmarkReaderNoHash/large_log_no_match-24       100000               100.8 ns/op      168692.68 MB/s         0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/large_log#01-24             100000               117.5 ns/op      144731.78 MB/s         1 B/op          0 allocs/op
+//
+// cpu: Ampere Altra 2 vCPUs
+// BenchmarkReaderNoHash/single_line-2               100000               212.8 ns/op       225.52 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/multi_line-2                100000               214.9 ns/op       209.38 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/many_secrets-2              100000               219.3 ns/op       282.77 MB/s           0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log-2                 100000               218.7 ns/op      77771.93 MB/s          0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log_no_match-2        100000               222.3 ns/op      76525.01 MB/s          0 B/op          0 allocs/op
+// BenchmarkReaderNoHash/large_log#01-2              100000               268.6 ns/op      63321.08 MB/s          1 B/op          0 allocs/op
 
 // TODO: benchmark arm & intel
 
