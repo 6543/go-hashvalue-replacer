@@ -96,8 +96,6 @@ func NewReader(rd io.ReadCloser, salt []byte, hashes [][]byte, lengths []int, op
 		opts.NumWorkers = runtime.NumCPU()
 	}
 
-	rd.Close()
-
 	r := &Reader{
 		reader:       bufio.NewReader(rd),
 		readerCloser: rd.Close,

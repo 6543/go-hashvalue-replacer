@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func blake2bHash(salt []byte, data []byte) []byte {
+func sha256Hash(salt []byte, data []byte) []byte {
 	h := sha256.New()
 	h.Write(salt)
 	h.Write([]byte(data))
@@ -38,27 +38,32 @@ func TestReader(t *testing.T) {
 			log:     `this IS secret: password`,
 			secrets: []string{"password", " IS "},
 			expect:  `this********secret: ********`,
-		}, {
+		},
+		{
 			name:    "secret with one newline",
 			log:     "start log\ndone\nnow\nan\nmulti line secret!! ;)",
 			secrets: []string{"an\nmulti line secret!!"},
 			expect:  "start log\ndone\nnow\n******** ;)",
-		}, {
+		},
+		{
 			name:    "secret with multiple lines with no match",
 			log:     "start log\ndone\nnow\nan\nmulti line secret!! ;)",
 			secrets: []string{"Test\nwith\n\ntwo new lines"},
 			expect:  "start log\ndone\nnow\nan\nmulti line secret!! ;)",
-		}, {
+		},
+		{
 			name:    "secret with multiple lines with match",
 			log:     "start log\ndone\nnow\nan\nmulti line secret!! ;)\nwith\ntwo\n\nnewlines",
 			secrets: []string{"an\nmulti line secret!!", "two\n\nnewlines"},
 			expect:  "start log\ndone\nnow\n******** ;)\nwith\n********",
-		}, {
+		},
+		{
 			name:    "also support other unicode chars",
 			log:     "мультибайт\nтекст",
 			secrets: []string{"мульти"},
 			expect:  "********байт\nтекст",
-		}, {
+		},
+		{
 			name:    "loop detection of mask already in input",
 			log:     "already masked ********",
 			secrets: []string{"********"},
@@ -91,8 +96,8 @@ func TestReader(t *testing.T) {
 		name:   "no hash",
 		hashFn: noHash,
 	}, {
-		name:   "blake2b hash",
-		hashFn: blake2bHash,
+		name:   "sha256 hash",
+		hashFn: sha256Hash,
 	}}
 
 	for _, hash := range hashes {
@@ -120,7 +125,7 @@ func TestReader(t *testing.T) {
 func BenchmarkReader(b *testing.B) {
 	salt := []byte("test-salt")
 	opts := Options{
-		Hash: blake2bHash,
+		Hash: sha256Hash,
 		Mask: "********",
 	}
 
@@ -175,6 +180,13 @@ func BenchmarkReader(b *testing.B) {
 		})
 	}
 }
+
+// cpu: AMD Ryzen 9 7940HS
+// BenchmarkReader/single_line-16            100000                63.52 ns/op      755.64 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/multi_line-16             100000                64.85 ns/op      693.91 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/many_secrets-16           100000                74.10 ns/op      836.70 MB/s           0 B/op          0 allocs/op
+// BenchmarkReader/large_log-16              100000                73.12 ns/op     232642.04 MB/s         4 B/op          0 allocs/op
+// BenchmarkReader/large_log_no_match-16     100000                82.83 ns/op     205358.22 MB/s         6 B/op          0 allocs/op
 
 func BenchmarkReaderNoHash(b *testing.B) {
 	salt := []byte{}
