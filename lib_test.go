@@ -181,6 +181,8 @@ func BenchmarkReader(b *testing.B) {
 	}
 }
 
+// go test -benchmem -run='^$' -bench '^BenchmarkReader$' -benchtime=1000000x github.com/6543/go-hashvalue-replacer
+//
 // cpu: AMD Ryzen 9 7940HS
 // BenchmarkReader/single_line-16            100000                63.52 ns/op      755.64 MB/s           0 B/op          0 allocs/op
 // BenchmarkReader/multi_line-16             100000                64.85 ns/op      693.91 MB/s           0 B/op          0 allocs/op
@@ -263,6 +265,8 @@ func BenchmarkReaderNoHash(b *testing.B) {
 	}
 }
 
+// go test -benchmem -run='^$' -bench '^BenchmarkReaderNoHash$' -benchtime=1000000x github.com/6543/go-hashvalue-replacer
+//
 // cpu: AMD Ryzen 9 7940HS
 // BenchmarkReaderNoHash/single_line-16              100000                62.21 ns/op      771.62 MB/s           0 B/op          0 allocs/op
 // BenchmarkReaderNoHash/multi_line-16               100000                61.72 ns/op      729.08 MB/s           0 B/op          0 allocs/op
